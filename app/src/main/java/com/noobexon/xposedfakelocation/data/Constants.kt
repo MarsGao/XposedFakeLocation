@@ -49,6 +49,9 @@ const val KEY_ENABLE_SYSTEM_HOOKS = "enable_system_hooks"
 const val KEY_THEME_OPTION = "theme_option"
 
 // Packages added/removed from module scope when system-level hooks are toggled.
+// DO NOT add "system" (Vector's scope name for system_server): hooking
+// system_server here threw an uncaught exception when WeChat requested location,
+// crashing system_server and forcing an Android watchdog reboot of the whole device.
 val SYSTEM_HOOK_PACKAGES = listOf("android", "com.android.phone")
 
  // DEFAULT VALUES

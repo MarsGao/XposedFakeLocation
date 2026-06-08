@@ -24,6 +24,7 @@ class ModuleEntry : XposedModule() {
     private var locationApiHooks: LocationApiHooks? = null
     private var systemServicesHooks: SystemServicesHooks? = null
     private var phoneServicesHooks: PhoneServicesHooks? = null
+    private var locationApiHooksInitialized = false
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         log(Log.INFO, TAG, "onModuleLoaded: ${param.processName}")
@@ -51,6 +52,7 @@ class ModuleEntry : XposedModule() {
             // skip LocationApiHooks so we don't fake com.android.phone's own location requests.
             phoneServicesHooks = PhoneServicesHooks(this, param.classLoader).also { it.initHooks() }
         } else {
+            initLocationApiHooks(param.classLoader)
             initHookingLogic(param)
         }
     }
@@ -82,8 +84,14 @@ class ModuleEntry : XposedModule() {
                 log(Log.ERROR, TAG, "Toast/context failed - ${e.message}")
             }
 
-            locationApiHooks = LocationApiHooks(this, param.classLoader).also { it.initHooks() }
+            initLocationApiHooks(param.classLoader)
             result
         }
+    }
+
+    private fun initLocationApiHooks(classLoader: ClassLoader) {
+        if (locationApiHooksInitialized) return
+        locationApiHooksInitialized = true
+        locationApiHooks = LocationApiHooks(this, classLoader).also { it.initHooks() }
     }
 }
