@@ -6,6 +6,8 @@
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/noobexon1/XposedFakeLocation/total?style=for-the-badge&logo=rolldown&logoColor=blue&label=downloads%20(repo)&color=blue)](https://github.com/noobexon1/XposedFakeLocation/releases)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Xposed-Modules-Repo/com.noobexon.xposedfakelocation/total?style=for-the-badge&logo=rolldown&label=downloads%20(LSPosed)&logoColor=pink&color=pink)](https://github.com/Xposed-Modules-Repo/com.noobexon.xposedfakelocation/releases)
 [![GitHub Repo stars](https://img.shields.io/github/stars/noobexon1/XposedFakeLocation?style=for-the-badge&logo=apachespark&color=yellow)](https://github.com/noobexon1/XposedFakeLocation/stargazers)
+[![MarsGao Fork Release](https://img.shields.io/github/v/release/MarsGao/XposedFakeLocation?style=for-the-badge&label=MarsGao%20release&logo=github&color=orange)](https://github.com/MarsGao/XposedFakeLocation/releases/latest)
+[![MarsGao Fork Stars](https://img.shields.io/github/stars/MarsGao/XposedFakeLocation?style=for-the-badge&label=stars%20%28MarsGao%20fork%29&logo=github&color=yellow)](https://github.com/MarsGao/XposedFakeLocation/stargazers)
 ![Platform](https://img.shields.io/badge/platform-Android-green.svg?style=for-the-badge&logo=android)
 
 **XposedFakeLocation** is an Android application and Xposed module that allows you to spoof your device's location for specific apps — and, optionally, at the system level — without using "mock location" from the developer options. Customize your location with precision, including sensor data, and add randomization within a specified radius for enhanced privacy.
@@ -19,6 +21,9 @@
 > [!IMPORTANT]
 > **This module now targets the modern libxposed API (Xposed API 101+).** You must use a recent **LSPosed** build that supports the new API — older managers will not load the module. Get the latest LSPosed from the official Telegram channel: **[t.me/LSPosed](https://t.me/LSPosed)**.
 
+> [!NOTE]
+> **MarsGao maintained fork:** device-validated releases are published at [MarsGao/XposedFakeLocation](https://github.com/MarsGao/XposedFakeLocation/releases). The current maintained line focuses on WeChat `8.0.69 GP` and AMap `16.17.3 GP` compatibility on Mi 14 Pro and OnePlus ACE 5. If this fork helps you, please star the fork repo and share reproducible device/app-version reports so more APK variants can be maintained.
+
 
 ---
 
@@ -27,6 +32,8 @@
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [APK Channel Support](#apk-channel-support)
+- [Community / Xposed Repo Status](#community--xposed-repo-status)
 - [Usage](#usage)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -61,6 +68,23 @@
 ## **Installation**
 
 You can always install the latest stable version of `XposedFakeLocation` from the [releases](https://github.com/noobexon1/XposedFakeLocation/releases) page. 
+
+### **MarsGao Maintained Release**
+
+The MarsGao fork publishes tested maintenance builds for newer app versions and device/root stacks:
+
+- Fork releases: [github.com/MarsGao/XposedFakeLocation/releases](https://github.com/MarsGao/XposedFakeLocation/releases)
+- Current maintained release line: `v1.1.11-mars.1`
+- Validated targets: WeChat `8.0.69 GP` and AMap `16.17.3 GP`
+
+Install the release APK over an existing compatible build, then reboot once:
+
+```shell
+adb install -r XposedFakeLocation-v1.1.11-mars.1-release.apk
+adb reboot
+```
+
+After reboot, keep using the same package name `com.noobexon.xposedfakelocation`; this preserves app data and LSPosed/Vector module identity.
 
 If you want to build by yourself:
 
@@ -97,6 +121,34 @@ If you want to build by yourself:
 
 > [!NOTE]
 > From now on, all you need to do in `LSPosed` is **enable the module** — the entire scope is managed from within the `XposedFakeLocation` app itself. Adding/removing target apps and toggling system-level hooks updates the LSPosed scope automatically, so you should not edit the module's scope manually in `LSPosed`.
+
+---
+
+## **APK Channel Support**
+
+WeChat and AMap ship different APK channels. China-mainland APKs and Google Play APKs may share a visible version name while using different obfuscated classes, dex layouts, embedded map SDKs, and location dispatch paths.
+
+The MarsGao maintained release line currently validates the **Google Play channel**, commonly abbreviated as `GP`:
+
+- WeChat `8.0.69 GP`
+- AMap `16.17.3 GP`
+
+Do not assume a mainland APK with the same visible version is already supported. Mainland builds need their own APK pull, class analysis, hook adaptation, and device validation.
+
+---
+
+## **Community / Xposed Repo Status**
+
+The existing LSPosed/Xposed community package is published under:
+
+- [Xposed-Modules-Repo/com.noobexon.xposedfakelocation](https://github.com/Xposed-Modules-Repo/com.noobexon.xposedfakelocation)
+
+Because this fork intentionally keeps the same package name, it cannot be safely published as a second independent module with the same package identity. The practical paths are:
+
+- **Preferred:** upstream useful fixes or coordinate maintainership for the existing Xposed-Modules-Repo package, so users can find updates directly in LSPosed/Xposed without package migration.
+- **Independent listing:** create a new package name and a new Xposed-Modules-Repo module. This is higher cost because users must install a separate app, re-enable the module, reselect scopes, and may need preference migration.
+
+Until community publishing is coordinated, install MarsGao builds from the fork's GitHub releases.
 
 ---
 
@@ -173,6 +225,15 @@ If you want to build by yourself:
 
 ## **Contributing**
 Contributions are welcome! Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the project structure, coding guidelines, and the pull request process.
+
+For the MarsGao maintained fork, high-value reports should include:
+
+- Device model, Android version, root stack, and LSPosed/Vector version.
+- Target app package name, visible version, versionCode, and APK channel (`GP` or China-mainland).
+- Whether the issue affects app-level hooks, system-level hooks, or both.
+- Reproduction steps and observed behavior after a full reboot.
+
+If this project is useful to you, please star [MarsGao/XposedFakeLocation](https://github.com/MarsGao/XposedFakeLocation). Stars help show real demand and make it easier to prioritize maintenance for new WeChat, AMap, and device/root-stack versions. Pull requests and verified APK analysis are welcome.
 
 ---
 

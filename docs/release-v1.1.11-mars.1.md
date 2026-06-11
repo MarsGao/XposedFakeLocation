@@ -35,3 +35,9 @@ adb reboot
 ```
 
 After reboot, unlock the device and verify target apps are still in module scope.
+
+## Community Status
+
+This release keeps the original package name `com.noobexon.xposedfakelocation` for upgrade compatibility. The existing Xposed community listing is `Xposed-Modules-Repo/com.noobexon.xposedfakelocation`, so MarsGao fork builds are published from GitHub releases until upstream/community publishing is coordinated.
+
+If this release helps, please star `MarsGao/XposedFakeLocation` and share reproducible reports with device model, root stack, app versionCode, APK channel (`GP` or mainland), and validation steps.

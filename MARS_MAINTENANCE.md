@@ -26,6 +26,33 @@ Do not treat `8.0.69 GP` as equivalent to a mainland WeChat `8.0.69` APK. Obfusc
 - Keep device-specific or high-risk system-server experiments in this fork until isolated probe builds prove stability.
 - Do not add Vector's `"system"` scope to `SYSTEM_HOOK_PACKAGES` in normal releases.
 
+## Xposed-Modules-Repo Publishing Policy
+
+The biliSpeed workflow can be reused only when the package name is owned by a matching repository under `Xposed-Modules-Repo`. For this project, the existing community repository is:
+
+- `https://github.com/Xposed-Modules-Repo/com.noobexon.xposedfakelocation`
+
+This fork currently keeps the original application id:
+
+- `com.noobexon.xposedfakelocation`
+
+That is intentional because it preserves upgrade compatibility, app data, and the existing LSPosed/Vector module identity. The tradeoff is that the MarsGao fork cannot be published as a second independent Xposed community module with the same package name.
+
+Recommended route:
+
+1. Keep publishing tested MarsGao builds at `https://github.com/MarsGao/XposedFakeLocation/releases`.
+2. Upstream general fixes as small PRs.
+3. Coordinate with the original maintainer or Xposed-Modules-Repo maintainers if MarsGao releases should become visible directly from the existing community listing.
+
+Independent community listing route:
+
+1. Rename the application id, module package, and related metadata to a MarsGao-owned package.
+2. Request/create a new `Xposed-Modules-Repo/<new.package.name>` repository.
+3. Publish releases to both the personal repo and the official Xposed-Modules-Repo repo.
+4. Provide migration instructions because users must install a separate app, re-enable the module, reselect scopes, and may need preference migration.
+
+Do not rename the package just to gain a separate listing unless the project is intentionally becoming a long-term independent fork.
+
 ## Release Checklist
 
 1. Build and test locally:
@@ -58,6 +85,16 @@ Do not treat `8.0.69 GP` as equivalent to a mainland WeChat `8.0.69` APK. Obfusc
    git push fork v1.1.11-mars.1
    gh release create v1.1.11-mars.1 --repo MarsGao/XposedFakeLocation --target local-maintained --notes-file .\docs\release-v1.1.11-mars.1.md
    ```
+
+5. After publishing, run the safety checks before linking the release publicly:
+
+   ```powershell
+   git grep -n -I -E "ghp_|github_pat_|BEGIN .*PRIVATE KEY|PRIVATE_KEY|SECRET|TOKEN|PASSWORD|COOKIE|SuperKey|超级密钥" -- .
+   git ls-files | Select-String "\.(apk|jks|keystore|p12|pem|key)$"
+   gh release view v1.1.11-mars.1 --repo MarsGao/XposedFakeLocation --json tagName,targetCommitish,assets
+   ```
+
+   Expected result: no personal keys, keystores, private tokens, cookies, or private APK analysis dumps are committed. GitHub Actions expressions such as `${{ github.token }}` are workflow references, not leaked secret values.
 
 ## Upstream PR Candidates
 
