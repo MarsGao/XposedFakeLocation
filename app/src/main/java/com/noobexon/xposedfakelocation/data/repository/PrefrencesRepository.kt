@@ -61,6 +61,7 @@ import com.noobexon.xposedfakelocation.data.SHARED_PREFS_FILE
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
 import com.noobexon.xposedfakelocation.manager.App
+import io.github.libxposed.service.XposedService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -84,6 +85,34 @@ import kotlinx.coroutines.flow.flowOf
  * keeping read/write symmetry with the hook-side PreferencesUtil.
  */
 class PreferencesRepository(context: Context) {
+    companion object {
+        private const val LEGACY_REMOTE_MIGRATION_MARKER = "legacy_remote_preferences_migrated_v2"
+
+        private val LEGACY_HOOK_KEYS = setOf(
+            KEY_IS_PLAYING,
+            KEY_LAST_CLICKED_LOCATION,
+            KEY_USE_ACCURACY,
+            KEY_ACCURACY,
+            KEY_USE_ALTITUDE,
+            KEY_ALTITUDE,
+            KEY_USE_RANDOMIZE,
+            KEY_RANDOMIZE_RADIUS,
+            KEY_USE_VERTICAL_ACCURACY,
+            KEY_VERTICAL_ACCURACY,
+            KEY_USE_MEAN_SEA_LEVEL,
+            KEY_MEAN_SEA_LEVEL,
+            KEY_USE_MEAN_SEA_LEVEL_ACCURACY,
+            KEY_MEAN_SEA_LEVEL_ACCURACY,
+            KEY_USE_SPEED,
+            KEY_SPEED,
+            KEY_USE_SPEED_ACCURACY,
+            KEY_SPEED_ACCURACY,
+            KEY_TARGET_APPS,
+            KEY_HIDE_FAKE_LOCATION_TOAST,
+            KEY_ENABLE_SYSTEM_HOOKS,
+        )
+    }
+
     private val tag = "PreferencesRepository"
 
     private val gson = Gson()
@@ -93,6 +122,61 @@ class PreferencesRepository(context: Context) {
 
     private fun remotePrefs(): SharedPreferences? =
         App.service?.getRemotePreferences(REMOTE_PREFS_GROUP)
+
+    fun migrateLegacyHookPreferencesToRemote(service: XposedService) {
+        if (localPrefs.getBoolean(LEGACY_REMOTE_MIGRATION_MARKER, false)) return
+
+        val remote = service.getRemotePreferences(REMOTE_PREFS_GROUP)
+        // The incomplete post-DataStore state contains only is_playing/location. A missing
+        // target_apps key plus a legacy local value is the migration signal; otherwise remote
+        // preferences remain authoritative and are never overwritten.
+        if (remote.contains(KEY_TARGET_APPS) || !localPrefs.contains(KEY_TARGET_APPS)) {
+            localPrefs.edit { putBoolean(LEGACY_REMOTE_MIGRATION_MARKER, true) }
+            return
+        }
+
+        val editor = remote.edit()
+        localPrefs.all
+            .filterKeys { it in LEGACY_HOOK_KEYS }
+            .forEach { (key, value) ->
+                when (value) {
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Float -> editor.putFloat(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Long -> editor.putLong(key, value)
+                    is String -> editor.putString(
+                        key,
+                        if (key == KEY_LAST_CLICKED_LOCATION) {
+                            normalizeLegacyLocation(value)
+                        } else {
+                            value
+                        }
+                    )
+                }
+            }
+
+        if (editor.commit()) {
+            localPrefs.edit { putBoolean(LEGACY_REMOTE_MIGRATION_MARKER, true) }
+            Log.i(tag, "Migrated legacy hook preferences to remote storage")
+        } else {
+            Log.e(tag, "Failed to migrate legacy hook preferences to remote storage")
+        }
+    }
+
+    private fun normalizeLegacyLocation(json: String): String {
+        return try {
+            val value = gson.fromJson(json, Map::class.java)
+            val latitude = (value["latitude"] ?: value["lat"]) as? Number
+            val longitude = (value["longitude"] ?: value["lng"]) as? Number
+            if (latitude != null && longitude != null) {
+                gson.toJson(LastClickedLocation(latitude.toDouble(), longitude.toDouble()))
+            } else {
+                json
+            }
+        } catch (_: Exception) {
+            json
+        }
+    }
 
     // region Flow helpers
 

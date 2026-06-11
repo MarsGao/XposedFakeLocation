@@ -1,6 +1,7 @@
 package com.noobexon.xposedfakelocation.xposed
 
 import android.app.Application
+import android.os.Handler
 import android.util.Log
 import android.widget.Toast
 import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
@@ -73,9 +74,10 @@ class ModuleEntry : XposedModule() {
 
         hook(method).intercept { chain ->
             val result = chain.proceed()
+            val application = chain.getArg(0) as Application
 
             try {
-                val context = (chain.getArg(0) as Application).applicationContext
+                val context = application.applicationContext
                 log(Log.INFO, TAG, "Target App's context has been acquired (${param.packageName}).")
                 if (PreferencesUtil.getHideFakeLocationToast() != true) {
                     Toast.makeText(context, "Fake Location Is Active!", Toast.LENGTH_SHORT).show()
@@ -85,7 +87,19 @@ class ModuleEntry : XposedModule() {
             }
 
             initLocationApiHooks(param.classLoader)
+            retryThirdPartyHooks(application)
             result
+        }
+    }
+
+    private fun retryThirdPartyHooks(application: Application) {
+        locationApiHooks?.initThirdPartyHooks()
+
+        val handler = Handler(application.mainLooper)
+        listOf(1_000L, 5_000L, 15_000L, 30_000L, 60_000L, 120_000L).forEach { delay ->
+            handler.postDelayed({
+                locationApiHooks?.initThirdPartyHooks()
+            }, delay)
         }
     }
 
